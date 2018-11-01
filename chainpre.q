@@ -46,3 +46,6 @@ dstdir:hsym `$(raze system"pwd"),"/",dir
 savechain:{[dir;t;d]0N!.Q.par[dir;d;`$"chain/"]set .Q.en[dir]select from t where d="d"$dt}
 savechain[dstdir;chain]each exec distinct"d"$dt from chain;
 .Q.chk dstdir;
+
+
+
