@@ -31,22 +31,23 @@ precdict:{
  `accuracy`errorRate`precision`recall`specificity`TSS!(accuracy;errorRate;precision;recall;specificity;TSS)
  } /create metrics dictionary
 
-resplot:{[t1;t2;stn]
+resplot:{[t1;t2]
 
   plt[`:subplots][1;2;`figsize pykw 20 4];
 
   plt[`:subplot]121;
-  plt[`:scatter][t1`chainStation;t1`TSS];
-  plt[`:scatter][first t1`chainStation;first t1`TSS;`color pykw`black];
+  plt[`:scatter][t1[`cs]except`edm`gri`gil`rep;exec TSS from t1 where cs<>`edm,cs<>`gri,cs<>`gil,cs<>`rep];
+  plt[`:scatter][`ALL`mcm;exec TSS from t1 where cs in`ALL`mcm;`color pykw`black];
   plt[`:grid]1b;
   plt[`:ylim]0 1;
   plt[`:xlabel]"Chain Station";
   plt[`:ylabel]"Total Skill Score";
   plt[`:title]"Individual SVM Results";
 
+  t2:`cs xasc t2,select from t1 where cs=`mcm;
   plt[`:subplot]122;
-  plt[`:scatter][t2`chainStation;t2`TSS;`color pykw `darkorange];
-  plt[`:scatter][stn;exec first TSS from t2 where chainStation=stn;`color pykw`black];
+  plt[`:scatter][t2[`cs]except`edm`gri`gil`rep;exec TSS from t2 where cs<>`edm,cs<>`gri,cs<>`gil,cs<>`rep;`color pykw `darkorange];
+  plt[`:scatter][`mcm;exec TSS from t2 where cs=`mcm;`color pykw`black];
   plt[`:grid]1b;
   plt[`:ylim]0 1;
   plt[`:xlabel]"Chain Station";
@@ -55,7 +56,7 @@ resplot:{[t1;t2;stn]
 
   plt[`:show][];
 
- } /TSS score of each station
+ }
 
 rocplot:{[ytest;ypred]
 
@@ -78,22 +79,23 @@ rocplot:{[ytest;ypred]
 
 scintplot:{
 
+ t:select from x where cs=`mcm;
  plt[`:subplots][3;1;`figsize pykw 6 6];
  plt[`:subplot]311;
- plt[`:plot][1000#4600_x`sigPhiVer;`color pykw`darkblue;`label pykw`sigPhiVer];
+ plt[`:plot][1000#4600_t`sigPhiVer;`color pykw`darkblue;`label pykw`sigPhiVer];
  plt[`:ylabel]"SigPhiVer [radians]";
  plt[`:xticks][() ()];
  plt[`:legend][];
  plt[`:title]"Feature variation during scintillation event";
 
  plt[`:subplot]312;
- plt[`:plot][1000#4600_x`dTEC_15s;`color pykw`r;`label pykw`dTEC_15s];
- plt[`:ylabel]"dTEC [TECU]";
+ plt[`:plot][1000#4600_t`dtec;`color pykw`r;`label pykw`dtec];
+ plt[`:ylabel]"dtec [TECU]";
  plt[`:xticks][() ()];
  plt[`:legend][];
 
  plt[`:subplot]313;
- plt[`:plot][1000#4600_x`xcomp;`color pykw`g;`label pykw`xcomp];
+ plt[`:plot][1000#4600_t`x;`color pykw`g;`label pykw`x];
  plt[`:ylabel]"x comp [nT]";
  plt[`:xlabel]"Timestep";
  plt[`:legend][];
@@ -101,4 +103,4 @@ scintplot:{
  plt[`:tight_layout][];
  plt[`:show][];
 
- } /scintillation plot
+ }
