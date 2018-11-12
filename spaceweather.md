@@ -135,7 +135,7 @@ scintillation| num     pcnt
 1            | 140503  3.16
 ```
 
-Ideally, data would have been recorded for each CHAIN station, at every minute throughout 2015. However, this was not the case. Receivers experience faults which lead to gaps in the data. 
+Ideally, data would have been recorded for each CHAIN station, at every minute throughout 2015. However, GNSS receivers are often prone to hardware failures, which lead to gaps in the data. 
 
 ![Figure 1](img/sigPhiVer.png)  
 <small>_Figure 1: Values for the phase scintillation index projected to the vertical, recorded by each CHAIN receiver throughout 2015._</small>
@@ -150,7 +150,7 @@ $$\begin{equation}TSS=\frac{TP}{TP+FN}-\frac{FP}{FP+TN}\end{equation}$$
 where $TP$, $TN$, $FP$ and $FN$ are true positives, true negatives, false positives and false negatives respectively.
 
 ### Additional Features
-Scintillation events are subject to seasonal variations. To account for this, the sine and cosine time of day and day of year were added to the data. For the baseline, only the cosine day of year was added.
+Scintillation events are subject to diurnal and seasonal variations, caused by the inclination of the Earth in relation to the Sun. When either hemisphere of the Earth is tilted towards the Sun, increased solar radiation causes greater ionization in the upper atmosphere. This leads to higher scintillation indices and thus more scintillation events.[9] To account for such variations, the sine and cosine local time of day and day of year were added to the dataset. For the baseline, only the cosine day of year was added.
 
 $cosdoy = cos{\frac{2 \pi doy}{D_{tot}}}$
 
@@ -528,7 +528,9 @@ in the Capital Markets Training Program.
 
 [7] Tinin, M. and I.Knizhin, S. *Eliminating the Effects of Multipath Signal Propagation in a Smoothly Inhomogeneous Medium. Radiophysics and Quantum Electronics, 56(7), pp.413-421.*, 2013.
 
-[8] Bobra, M. and Couvidat, *S. Solar Flare Prediction Using SDO/HMI Vector Magnetic Field Data with a Machine-Learning Algorithm*, 2015.
+[8] Bobra, M. and Couvidat, S. *Solar Flare Prediction Using SDO/HMI Vector Magnetic Field Data with a Machine-Learning Algorithm*, 2015.
+
+[9] Jin, Y., Miloch, W. J., Moen, J. I. AND Clausen, L. B. *Solar cycle and seasonal variations of the GPS phase scintillation at high latitudes. Journal of Space Weather and Space Climate, 8, p.A48.*, 2018.
 
 ## Data Sources
 The code presented in this paper is available at [github.com/dmorgankx](https://github.com/dmorgankx/spaceweather).
