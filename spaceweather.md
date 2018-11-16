@@ -79,7 +79,7 @@ chain specSlope 1       ::
 ## SVM Model
 A SVM was used to recreate the baseline model outlined in McGranaghan et al., 2018.
 
-The baseline model uses the first two datasets to predict scintillation events an hour ahead. For this method, a total of 40,000 random data points from 2015 were selected, taking data from each CHAIN receiver.
+The baseline model uses the first two datasets to predict scintillation events an hour ahead. For this method, a total of 40,000 random data points were selected from 2015, taking data from each CHAIN receiver.
 
 We aim to improve upon this model by:
    - Considering data on a receiver-by-receiver basis, while adding localized features, to account for the geospatial element in the data.
@@ -90,7 +90,7 @@ We aim to improve upon this model by:
 Along with the partitioned database, scripts were loaded containing utility functions, graphing methods, and the required configuration table.
 
 ```q
-q)\l /SpaceWeather/kxhdb
+q)\l /SpaceWeather/kxdb
 q)\l ../sw1/utils.q
 q)\l ../sw1/graphics.q
 q)\l ../sw1/configSVM.q
@@ -109,15 +109,15 @@ q)getAllDate:{[dt]
     select from(t lj`dt xkey update match:1b from r`goes)where match}
 q)show completeSVM:raze getAllDate peach sdateSVM+til 1+edateSVM-sdateSVM
 
-dt                            doy cs  tec      dtec   SI    specSlope s4         sigPhiVer  ..
---------------------------------------------------------------------------------------------..
-2015.01.01D00:00:00.000000000 1   arv 16.31073 0.285  0.014 1.77      0.04130524 0.03474961 ..
-2015.01.01D00:00:00.000000000 1   chu 20.58558 0.003  0.009 1.89      0.03389442 0.03238033 ..
-2015.01.01D00:00:00.000000000 1   cor 17.63518 0.072  0.013 2.06      0.04001991 0.0569824  ..
-2015.01.01D00:00:00.000000000 1   edm 26.65708 -0.046 0.01  1.86      0.0443945  0.03070174 ..
-2015.01.01D00:00:00.000000000 1   fsi 27.10333 -0.011 0.008 1.77      0.02914058 0.02512171 ..
-2015.01.01D00:00:00.000000000 1   fsm 21.78102 -0.033 0.009 1.83      0.02766845 0.02570405 ..
-2015.01.01D00:00:00.000000000 1   gil 24.6702  -0.009 0.012 2.06      0.03305384 0.07465466 ..
+dt                            doy cs  tec      dtec   SI    specSlope s4         sigPhiVer  Bz   ..
+-------------------------------------------------------------------------------------------------..
+2015.01.01D00:00:00.000000000 1   arv 16.31073 0.285  0.014 1.77      0.04130524 0.03474961 1.05 ..
+2015.01.01D00:00:00.000000000 1   chu 20.58558 0.003  0.009 1.89      0.03389442 0.03238033 1.05 ..
+2015.01.01D00:00:00.000000000 1   cor 17.63518 0.072  0.013 2.06      0.04001991 0.0569824  1.05 ..
+2015.01.01D00:00:00.000000000 1   edm 26.65708 -0.046 0.01  1.86      0.0443945  0.03070174 1.05 ..
+2015.01.01D00:00:00.000000000 1   fsi 27.10333 -0.011 0.008 1.77      0.02914058 0.02512171 1.05 ..
+2015.01.01D00:00:00.000000000 1   fsm 21.78102 -0.033 0.009 1.83      0.02766845 0.02570405 1.05 ..
+2015.01.01D00:00:00.000000000 1   gil 24.6702  -0.009 0.012 2.06      0.03305384 0.07465466 1.05 ..
 ..
 ```
 
@@ -176,7 +176,7 @@ q)completeSVM:flip(exec first scaler by colname from configSVM)@'flip
 
 Standard scaling was then used to remove the mean and scale each feature to unit variance. Meanwhile, target data was left unscaled and assigned a binary value, using the 0.1 radians threshold mentioned above. 
 
-A total of 40,000 random data points were selected and split into training (80%) and testing (20%) sets. Initially, two sets of shuffled indices were produced, covering the full set of indices in the data.
+For the baseline model, a total of 40,000 random data points were selected and split into training (80%) and testing (20%) sets. Initially, two sets of shuffled indices were produced, covering the full set of indices in the data.
 
 ```q
 q)splitIdx:{[x;y]k:neg[n]?n:count y;p:floor x*n;(p _ k;p#k)}
@@ -198,7 +198,7 @@ ytst| 228949
 ```
 
 
-### All Stations (Baseline Model)
+### Model
 The Python libraries and functions required to run the SVM model were imported using embedPy.
 
 ```q
@@ -213,21 +213,30 @@ At this stage, x and y training sets were passed to the model. Once trained, the
 A function was created so that the model could be run using different subsets of the data. 
 
 ```q
-q)SVMmodel:{[configSVM;tab]
- 
-   sample:tab -40000?count select from tab;
-   xdata:flip stdscaler each flip(exec colname from configSVM where feature)#sample;
-   ydata:.1<exec sigPhiVer1hr from sample;
-   r:`xtrn`ytrn`xtst`ytst!raze(xdata;ydata)@\:/:splitIdx[.2;ydata];
+q)trainPredSVM:{[stn;col]
 
-   model:svc[`kernel pykw`rbf;`C pykw .1;`gamma pykw .01;`class_weight pykw enlist[1]!enlist 50;`probability pykw 1b];
-   model[`:fit][array[value flip r`xtrn]`:T;r`ytrn];
- 
-   pred:model[`:predict][array[value flip r`xtst]`:T]`; 
-   metrics cfm[r`ytst;pred]
+  sample:t neg[c]?c:count t:svmData stn;
+  xdata:flip stdscaler each flip(exec colname from configSVM where feature)#sample;
+  ydata:.1<sample col;
+  r:`xtrn`ytrn`xtst`ytst!raze(xdata;ydata)@\:/:splitIdx[.2;ydata];
 
-   }
+  model:svc[`kernel pykw`rbf;`C pykw .1;`gamma pykw .01;`class_weight pykw enlist[1]!enlist 50;`probability pykw 1b];
+  if[(::)~ .[model[`:fit];(array[value flip r`xtrn]`:T;r`ytrn);{[e] -2"Error: ",e;}];:()];
+
+  pred:model[`:predict][array[value flip r`xtst]`:T]`; 
+  CM:cfm[r`ytst;pred];
+  (`model`cs`pred!(`SVM;stn;col)),metrics CM
+
+  }
 ```
+
+Additionally, data was split into different tables for each receiver station:
+
+```q
+q)svmData:(`ALL,stn)!enlist[-40000?completeSVM],{select from completeSVM where cs=x}each q)stn:distinct completeSVM`cs
+```
+
+### All Stations (Baseline Model)
 
 To achieve the baseline result, the function was passed combined data from all 14 stations. This model correctly identified 222 scintillation events, shown in the confusion matrix below.
 
@@ -241,8 +250,6 @@ q)cfm[r`ytst;pred]
 These values were used to produce performance metrics.
 
 ```q
-q)resALL:(enlist[`cs]!enlist`ALL),SVMmodel[configSVM;completeSVM]
-
 cs    accuracy errorRate precision recall specificity TSS    
 -------------------------------------------------------------
 ALL   73.04    26.96     9.512     83.15  72.69       0.5583
