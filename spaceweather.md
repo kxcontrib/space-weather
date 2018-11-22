@@ -60,7 +60,6 @@ During the initial stages of preprocessing, the following steps were taken:
 **Magnetometer**:
    - Raw data was recorded at minute intervals.
    - A chain station column was added to the final table so that data could be joined with CHAIN data at a later stage.
-
 Following preprocessing, the data was persisted as a date-partitioned kdb+ database. Scripts were written to create configuration tables, specifying the features and scaling required for each model. The configuration tables had the below form.
 
 ```q
@@ -91,9 +90,9 @@ Along with the partitioned database, scripts were loaded containing utility func
 
 ```q
 q)\l /SpaceWeather/kxdb
-q)\l ../sw1/utils.q
-q)\l ../sw1/graphics.q
-q)\l ../sw1/configSVM.q
+q)\l ../utils/utils.q
+q)\l ../utils/graphics.q
+q)\l ../config/configSVM.q
 ```
 
 For the SVM method, CHAIN and solar datasets were used, with measurements recorded at 1 minute intervals. CHAIN data was recorded for each of the 14 receiver stations. All data from 2015 was loaded, with the solar table joined to the corresponding rows in the CHAIN table. 
