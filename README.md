@@ -60,7 +60,6 @@ During the initial stages of preprocessing, the following steps were taken:
 **Magnetometer**:
    - Raw data was recorded at minute intervals.
    - A chain station column was added to the final table so that data could be joined with CHAIN data at a later stage.
-
 Following preprocessing, the data was persisted as a date-partitioned kdb+ database. Scripts were written to create configuration tables, specifying the features and scaling required for each model. The configuration tables had the below form.
 
 ```q
@@ -91,9 +90,9 @@ Along with the partitioned database, scripts were loaded containing utility func
 
 ```q
 q)\l /SpaceWeather/kxdb
-q)\l ../sw1/utils.q
-q)\l ../sw1/graphics.q
-q)\l ../sw1/configSVM.q
+q)\l ../utils/utils.q
+q)\l ../utils/graphics.q
+q)\l ../config/configSVM.q
 ```
 
 For the SVM method, CHAIN and solar datasets were used, with measurements recorded at 1 minute intervals. CHAIN data was recorded for each of the 14 receiver stations. All data from 2015 was loaded, with the solar table joined to the corresponding rows in the CHAIN table. 
@@ -124,7 +123,7 @@ dt                            doy cs  tec      dtec   SI    specSlope s4        
 ### Target Data
 The occurrence of scintillation events are shown by sudden irregularities in a number of features, specifically the phase scintillation index, which was projected to the vertical throughout this work (`sigPhiVer`). As the baseline looks at predicting scintillation 1 hour ahead, the value of $\sigma_\phi$ 1 hour ahead of the current timestep, `sigPhiVer1hr`, was used as target data for the models.
 
-A phase scintillation event is said to be occurring when has a value of greater than 0.1 radians. The target data is therefore assigned a value of 1 (positive class) if it has a value greater than 0.1 radians and 0 (negative class) if it has a value less than 0.1 radians. The percentage of scintillation events present in the SVM data are shown below.
+A phase scintillation event is said to be occurring when `sigPhiVer` has a value of greater than 0.1 radians. The target data is therefore assigned a value of 1 (positive class) if it has a value greater than 0.1 radians and 0 (negative class) if it has a value less than 0.1 radians. The percentage of scintillation events present in the SVM data are shown below.
 
 ```q
 q)dist:update pcnt:round[;.01]100*num%sum num from select num:count i by scintillation from([]scintillation:.1<completeSVM`sigPhiVer1hr);
@@ -258,7 +257,7 @@ ALL   73.04    26.96     9.512     83.15  72.69       0.5583
 ### Individual Stations
 As a comparison, data was split into respective tables for each receiver station. These were used to individually train and test the model.
 
-```q
+```
 cs     accuracy errorRate precision recall specificity TSS    
 --------------------------------------------------------------
 arv    81.46    18.54     7.331     73.08  81.63       0.5471 
@@ -282,7 +281,7 @@ Both previous models used data from the same station(s) to train and make predic
 
 In the below case, 32,000 random data points were selected as training data from the Fort McMurray (`mcm`) table and 8,000 points were chosen from each of the remaining tables to test the model. The SVM was then run as before.
 
-```q
+```
 cs    accuracy errorRate precision recall specificity TSS      
 ---------------------------------------------------------------
 arc   84.46    15.54     2.256     13.51  86.14       -0.003445
@@ -305,11 +304,11 @@ rep   80.61    19.39     12.53     41.67  82.9        0.2457
 Plotting the TSS for all three methods allowed the performance of each model to be compared.
  
 ![Figure 2](img/svmTSS1hr.png)  
-<small>_Figure 2: True Skill Statistic results produced by the Support Vector Machine models (individual models - top, Fort McMurray model - bottom). The combined and Fort McMurray models are plotted in black._</small>
+<small>_Figure 2: True Skill Statistic results produced by the Support Vector Machine models (individual models - left, Fort McMurray model - right). The combined and Fort McMurray models are plotted in black._</small>
 
-The SVM baseline model, which combined data from all the receiver stations, gave a relatively high accuracy of 73.04%. However, this model produced a low TSS of 0.56 (precision = 9.51%, recall = 83.15%). The top plot shows how the performance of the model varied depending on which station was used to train and test the SVM.
+The SVM baseline model, which combined data from all the receiver stations, gave an accuracy of 73.04% and a TSS of 0.56 (precision = 9.51%, recall = 83.15%). The top plot shows how the performance of the model varied depending on which station was used to train and test the SVM.
 
-TSS results produced by the Fort McMurray model are shown in the lower plot, with results varying even more drastically from station to station.
+TSS results produced by the Fort McMurray model are shown in the right plot, with results varying even more drastically from station to station.
 
 From these results we can infer that scintillation events must be localized and will therefore depend on the location of each individual receiver. In order to train a model with higher accuracy and TSS, data must either be separated on a station-by-station basis, or additional spatial parameters must be introduced to account for the geospatial elements in the data.
 
@@ -330,9 +329,9 @@ Dimensionality reduction is the process of reducing the number of features in a 
 
 A number of scikit-learn libraries were imported (using embedPy) for feature selection. Each determined the importance of features using a different method.
 
-**PCA**: Feature importance was carried out by calculating the variance of each component.  Plotting the variance allowed the minimum amount of features to be chosen which reduced dimensionality while keeping data loss to a minimum. It was found that the first 15 components held the most variance in the data. PCA was carried out again, using only the first 15 components in order to maximize the variance.
+**PCA**: Feature importance was carried out by calculating the variance of each component.  Plotting the variance allowed the minimum amount of features to be chosen, which reduced dimensionality while keeping data loss to a minimum. It was found that the first 15 components held the most variance in the data. PCA was carried out again, using only the first 15 components in order to maximize the variance.
 
-**Fisher Ranking**: The Fisher Score is a feature selection algorithm used to determine the most important features in a dataset. It assigns a score to each component, determining the number of features which should remain in the dataset based on their score. This was done using the python scikit-learn SelectKBest library and the f_classif function, which determine the F-score for each component. 
+**Fisher Ranking**: The Fisher Score is a feature selection algorithm used to determine the most important features in a dataset. It assigns a score to each component, determining the number of features that should remain in the dataset based on their score. This was done using the python scikit-learn SelectKBest library and the f_classif function, which determine the F-score for each component. 
 
 **Extra Tree Classification**: This method works by selecting features at random from a decision tree, in order to increase accuracy and control over-fitting within a model. They work similarly to random forests, but with a different data split, where for an extra trees classification, feature splitting is chosen at random, compared to the random forest method of choosing the best split among a subset of features. Important features among the dataset were scored based on the results of the decision tree outcomes.
 
@@ -501,20 +500,18 @@ For prediction time 24 hours, TSS results have increased by an average of 0.39 i
 
 The accuracy results for each of the neural network models were also improved. Each model produces an accuracy of greater than 98% regardless of the prediction time. This is a vast improvement on the baseline model.
 
-Comparing accuracy at 24 hour prediction time gives an average increase of 27%. We have therefore been able to create a neural network model which accurately makes reliable scintillation predictions as far as 24 hours ahead. 
-
 As future work, it could be beneficial to try and find the maximum prediction time for each dataset using the neural network model. It would also be interesting to see how results compared if null features for stations with sparse data were interpolated, as opposed to dropped. This would allow the neural network to be run for more stations.
 
 ## Conclusions
 In a society that is increasingly dependent on GNSS technology, it is important to be able to accurately predict signal disruptions. Previous models did not produce reliable results, as they struggled to account for the non-linear nature of Sun-Earth interactions. This paper discussed how to harness the power of kdb+ and embedPy, to train machine learning models and predict scintillations events.
 
-Data was preprocessed and scaled using kdb+. The support vector machine baseline model was then built, trained and tested using embedPy. Results produced by this model were improved upon by separating data on a receiver-by-receiver basis, showing that scintillation events are localized, and were therefore dependant on the location of each CHAIN receiver station.
+Data was preprocessed and scaled using kdb+. The support vector machine baseline model was then built, trained and tested using embedPy. Results produced by this model were improved upon by separating data on a receiver-by-receiver basis, showing that scintillation events are localized and, therefore, dependent on the location of each CHAIN receiver station.
 
 Feature selection allowed the dimensionality of the dataset to be reduced before adding spatial features, which accounted for the geospatial element of the Sun-Earth interactions. Additionally, adding an exponentially moving window to the input data helped to account for the temporal element in the data. Oversampling was also used in the training set to make it easier to train models to predict when scintillation events were occuring.
 
 The neural network method vastly improved results compared to the baseline model. Using this model allowed data from 2015-2017 to be used, compared to the baseline model which used 40,000 data points from 2015. The combined dataset for 1 hour prediction produced an increase in accuracy and total skill score of over 25% and 0.38 respectively. Predicting at 0.5-24 hour prediction times for the combined dataset, along with the Fort Churchill, Simpson and McMurray stations, also improved on the baseline results. Predictions produced high values for TSS regardless of prediction time, with all values sitting above 0.67. The combined model produced the highest TSS results with a value of 0.94 throughout.
 
-For 24 hour prediction, both accuracy and TSS results increased by an average of 27% and 0.39 respectively. We were therefore able to create a machine learning model which reliably predicted phase scintillation events as far as 24 hours ahead. 
+For 24 hour prediction, both accuracy and TSS results increased by an average of 27% and 0.39 respectively. We were therefore able to create a machine learning model, which reliably predicts phase scintillation events as far as 24 hours ahead. 
 
 ## Author
 Deanna Morgan joined First Derivatives in June 2018 as a Data Scientist
