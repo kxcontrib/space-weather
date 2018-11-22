@@ -16,11 +16,11 @@ NASA FDL 2018 focused on four areas of research - Space Resources, Exoplanets, S
 ## The Space Weather Challenge
 A GNSS is a network of satellites providing geospatial positioning with global coverage. The most famous example is the United States’ Global Positioning System (GPS). Such a network relies upon radio communications between satellites and ground-based receivers, which can be subject to interruptions in the presence of extreme space weather events.
 
-Space weather refers to changes in radiation emitted by the Sun, leading to fluctuations in the Earth’s ionosphere. Changes to the electron density in the ionosphere cause fluctuations in the amplitude and phase of radio signals, known as phase scintillation. Radio signals propagating between GNSS satellites and ground-based receivers are affected by these scintillation events and can become inaccurate or even lost. 
+Space weather refers to changes in radiation emitted by the Sun, leading to fluctuations in the Earth’s ionosphere. Changes to the electron density in the ionosphere cause fluctuations in the amplitude and phase of radio signals, referred to as phase scintillation. Radio signals propagating between GNSS satellites and ground-based receivers are affected by these scintillation events and can become inaccurate or even lost. 
 
 In a society that has become dependent on GNSS services for navigation in everyday life, it is important to know when signal disruptions might occur. Given that space weather events occurring between the Sun and the Earth have a non-linear relationship, physical models have struggled to predict scintillation events. One solution to making more accurate predictions, is to use machine learning (ML) techniques.
 
-In this paper, we examine the use of ML models to predict scintiallation events, using historical GNSS data. Initially, a Support Vector Machine (SVM) was used to recreate the baseline model outlined in McGranaghan et al., 2018. We then implemented a neural network model in an attempt to improve upon the baseline results and accurately predict events as far as 24 hours ahead. Both methods used the strength of kdb+/q to deal with time-series data and embedPy to import the necessary python ML libraries.
+In this paper, we examine the use of ML models to predict scintillation events, using historical GNSS data. Initially, a Support Vector Machine (SVM) was used to recreate the baseline model outlined in McGranaghan et al., 2018. We then implemented a neural network model in an attempt to improve upon the baseline results and accurately predict events as far as 24 hours ahead. Both methods used the strength of kdb+/q to deal with time-series data and embedPy to import the necessary python ML libraries.
 
 The technical dependencies required for the below work are as follows:
 
@@ -34,7 +34,7 @@ The technical dependencies required for the below work are as follows:
 
 
 ## Data
-Publicly available data was used to develop the ML models discussed below. Different datasets describe the state of the Sun, the ionosphere and the magnetic field of the Earth. Combining these datasets created an overall picture of atmospheric conditions at each timestep, including when scintillation events occured.
+Publicly available data was used to develop the ML models discussed below. Different datasets describe the state of the Sun, the ionosphere and the magnetic field of the Earth. Combining these datasets created an overall picture of atmospheric conditions at each timestep, including when scintillation events occurred.
 
 The first dataset was collected by the Canadian High Arctic Ionospheric Network (CHAIN) [1] from high-latitude GNSS receivers located throughout the Canadian Arctic. Data from multiple satellites was recorded by ground-based ionospheric scintillation and total electron count (TEC) monitors. For the purpose of this research, receivers from the Septentrio PolarRxS branch of the CHAIN network were used, taking the 14 CHAIN receiver stations [2] with the most continuous data. Recorded features for each receiver include; TEC, differential TEC (current TEC minus TEC recorded 15 seconds previously), the scintillation index, the phase and amplitude scintillation indices and the phase spectral slope.
 
@@ -42,8 +42,8 @@ Solar and geomagnetic features can be found in the second dataset, which is avai
 
 The third dataset was collected by the Canadian Array for Real-time Investigations of Magnetic Activity Network (CARISMA) [5]. CARISMA data was recorded by magnetometers at high latitudes, and could therefore be co-located with CHAIN data.
 
-## Preprocessing
-During the initial stages of preprocessing, the following steps were taken:
+## Pre-processing
+During the initial stages of pre-processing, the following steps were taken:
 
 **CHAIN**: 
    - Only data with a lock-time of greater than 200 seconds was included to account for "loss of lock" events, where receivers stop receiving satellite signals due to significant signal irregularities. [6]
@@ -60,7 +60,7 @@ During the initial stages of preprocessing, the following steps were taken:
 **Magnetometer**:
    - Raw data was recorded at minute intervals.
    - A chain station column was added to the final table so that data could be joined with CHAIN data at a later stage.
-Following preprocessing, the data was persisted as a date-partitioned kdb+ database. Scripts were written to create configuration tables, specifying the features and scaling required for each model. The configuration tables had the below form.
+Following pre-processing, the data was persisted as a date-partitioned kdb+ database. Scripts were written to create configuration tables, specifying the features and scaling required for each model. The configuration tables had the below form.
 
 ```q
 table colname   feature scaler
@@ -140,9 +140,9 @@ Ideally, data would have been recorded for each CHAIN station, at every minute t
 <small>_Figure 1: Values for the phase scintillation index projected to the vertical, recorded by each CHAIN receiver throughout 2015._</small>
 
 ### Metrics
-As only 3% of the data represented scintillation occuring, it would have been easy to create a model which produced high accuracy. A naive model which predicted that scintillation never occured would still have been correct 97% of the time. Additional metrics were therefore needed to determine how well the models performed. 
+As only 3% of the data represented scintillation occurring, it would have been easy to create a model which produced high accuracy. A naive model which predicted that scintillation never occurred would still have been correct 97% of the time. Additional metrics were therefore needed to determine how well the models performed. 
 
-In addition to accuracy, the True Skill Statistic (TSS) has been used throughout this paper to evaluate model performance. The TSS calculates the difference between recall and the false postive rate and produces values ranging from -1 to 1, with 1 being the perfect score. [8]
+In addition to accuracy, the True Skill Statistic (TSS) has been used throughout this paper to evaluate model performance. The TSS calculates the difference between recall and the false positive rate and produces values ranging from -1 to 1, with 1 being the perfect score. [8]
 
 $$\begin{equation}TSS=\frac{TP}{TP+FN}-\frac{FP}{FP+TN}\end{equation}$$
 
@@ -344,7 +344,7 @@ A number of scikit-learn libraries were imported (using embedPy) for feature sel
 Each of the above methods produced a list of important features. Combining these and selecting the components which had been selected multiple times produced the final feature list; `tec`, `dtec`, `s4`, `SI`, `specSlope`, `sigPhiVer`, `AE`, `AE_15`, `AE_30`, `newell_30`, `P`, `V`, `proton60`, `f107`, `kp` and `GOESx`. These were used in the neural network model, including time-lagged columns for each.
 
 ## Neural Network Model
-### Preprocessing
+### Pre-processing
 To improve performance metrics, data from 2015-2017 was used to train a neural network model. Going forward, only components selected in the feature selection process were used (found in the neural network configuration table). Data was loaded using the same method as above.
 
 As results showed that scintillation events are specific to the location of each station, localized features were added to the dataset. These included the magnetometer dataset, sindoy, sintime, cosdoy and costime. As previously stated, 365.25 is used for Dtot in this model to account for the extra day present in a leap year.
@@ -352,7 +352,7 @@ As results showed that scintillation events are specific to the location of each
 ![Figure 5](img/featVariation.png)  
 <small>_Figure 5: The variation in the phase scintillation index (sigPhiVer), the differential Total Electron Content (dtec) and the x component of the Earth’s magnetic field during a scintillation event, where sigPhiVer is greater than 0.1 radians._</small>
 
-When a scintillation event occurs, geomagnetic features such as x, y, z and dtec will fluctuate drastically. It was therefore useful to give more importance to these features by adding columns which contained their absolute values with the mean removed.
+When a scintillation event occurs, geomagnetic features such as `x`, `y`, `z` and `dtec` will fluctuate drastically. It was therefore useful to give more importance to these features by adding columns which contained their absolute values with the mean removed.
 
 ```q
 q)newval:{abs(x-avg x)}
@@ -474,9 +474,9 @@ SVM   mcm  86.54    13.46     13.89     93.99  86.36       0.8035
 NN    mcm  99.02    0.9849    65.32     78.01  99.35       0.7736
 ```
 
-Accuracy for all three models has increased to over 98%, while TSS has increased to values above 0.7. This is an impressive result given that 3 years worth of data was used to train/test each of the neural networks, compared to the 40,000 data points from 2015 used in the SVM model.
+Accuracy for all three models has increased to over 98%, while TSS has increased to values above 0.7. This is an impressive result given that 3 years of data was used to train/test each of the neural networks, compared to the 40,000 data points from 2015 used in the SVM model.
 
-Another means of determining how well the models performed was to plot true and predicted values together. In the below plot, the first 300 values for  at 1 hour prediction time have been plotted for the combined model. This plot shows how well predicted values compare with the test set.
+Another means of determining how well the models performed was to plot true and predicted values together. In the below plot, the first 300 values for at 1 hour prediction time have been plotted for the combined model. This plot shows how well predicted values compare with the test set.
 
 ![Figure 7](img/nnTruevsPred.png)  
 <small>_Figure 7: True (blue) and predicted values (orange) for the phase scintillation index at 1 hour prediction time (sigPhiVer1hr) produced by the neural network model using the combined dataset._</small>
@@ -505,9 +505,9 @@ As future work, it could be beneficial to try and find the maximum prediction ti
 ## Conclusions
 In a society that is increasingly dependent on GNSS technology, it is important to be able to accurately predict signal disruptions. Previous models did not produce reliable results, as they struggled to account for the non-linear nature of Sun-Earth interactions. This paper discussed how to harness the power of kdb+ and embedPy, to train machine learning models and predict scintillations events.
 
-Data was preprocessed and scaled using kdb+. The support vector machine baseline model was then built, trained and tested using embedPy. Results produced by this model were improved upon by separating data on a receiver-by-receiver basis, showing that scintillation events are localized and, therefore, dependent on the location of each CHAIN receiver station.
+Data was pre-processed and scaled using kdb+. The support vector machine baseline model was then built, trained and tested using embedPy. Results produced by this model were improved upon by separating data on a receiver-by-receiver basis, showing that scintillation events are localized and, therefore, dependent on the location of each CHAIN receiver station.
 
-Feature selection allowed the dimensionality of the dataset to be reduced before adding spatial features, which accounted for the geospatial element of the Sun-Earth interactions. Additionally, adding an exponentially moving window to the input data helped to account for the temporal element in the data. Oversampling was also used in the training set to make it easier to train models to predict when scintillation events were occuring.
+Feature selection allowed the dimensionality of the dataset to be reduced before adding spatial features, which accounted for the geospatial element of the Sun-Earth interactions. Additionally, adding an exponentially moving window to the input data helped to account for the temporal element in the data. Oversampling was also used in the training set to make it easier to train models to predict when scintillation events were occurring.
 
 The neural network method vastly improved results compared to the baseline model. Using this model allowed data from 2015-2017 to be used, compared to the baseline model which used 40,000 data points from 2015. The combined dataset for 1 hour prediction produced an increase in accuracy and total skill score of over 25% and 0.38 respectively. Predicting at 0.5-24 hour prediction times for the combined dataset, along with the Fort Churchill, Simpson and McMurray stations, also improved on the baseline results. Predictions produced high values for TSS regardless of prediction time, with all values sitting above 0.67. The combined model produced the highest TSS results with a value of 0.94 throughout.
 
@@ -538,4 +538,3 @@ in the Capital Markets Training Program.
 
 ## Data Sources
 The code presented in this paper is available at [github.com/dmorgankx](https://github.com/dmorgankx/spaceweather).
-
