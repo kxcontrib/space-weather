@@ -3,4 +3,4 @@
 Companion code and data files to the 
 Kx Technical Whitepaper
 
-[NASA Frontier Development Lab: Space Weather Challenge](http://code.kx.com/q/wp/space-weather/)
+[NASA Frontier Development Lab: Space Weather Challenge](https://code.kx.com/v2/wp/space-weather/)
